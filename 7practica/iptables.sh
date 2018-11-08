@@ -1,53 +1,39 @@
 #!/bin/sh
 
-#Kernel Support
-#Firewall Support
-#modprobe x_tables ==> Cargar los modulos
-# 1. Averiguar donde esta iptables
+IPT = /sbin/iptables
 
-IPT = $(whereis iptables)
-
-#blank slate for our firewall so we are not adding rules on top of rules already defined in the kernel
+#Blank state
 $IPT -F
 
-#default state for policies is accept for output
-# outgoing connections allowed
+#Aceptar todo para output, denegar todo para input y forward
 $IPT -P OUTPUT ACCEPT
-# incoming connections not accepted
 $IPT -P INPUT DROP
-#
 $IPT -P FORWARD DROP
 
-#new chain
 $IPT -t nat -P OUTPUT ACCEPT
 $IPT -t nat -P PREROUTING ACCEPT
 $IPT -t nat -p POSTROUTING
 
 $IPT -N SERVICES
 
-
-# allow loopback traffic
-# -A = append
-# --in-interface lo paquetes recibidos en lo
-# -j target of rule
+#Permitir trafico en loopback
 $IPT -A INPUT --in-interface lo -j ACCEPT
+
+#Cadena para gestionar los servicios
 $IPT -A INPUT -j SERVICES
-#Open specific ports for the internet
-#netstat --inet -pln
-#web server
-# -p tcp protocol
-# -dport puerto
+#Aceptar conexiónes desde la red interna a los puertos 80 (web) y 22 (servicio SSH en el FW)
 #ssh
-$IPT -A SERVICES -p tcp --dport 22 -j ACCEPT
-$IPT -A SERVICES -p tcp -dport 8008 -j ACCEPT
+$IPT -A SERVICES --in-interface ens3 -p tcp --dport 22 -j ACCEPT
+#servidor web
+$IPT -A SERVICES --in-interface ens3 -p tcp --dport 80 -j ACCEPT
+#impresora 
+$IPT -A SERVICES -m iprange --src-range 192.168.2.1-192.168.2.254 -p tcp --dport 631 -j ACCEPT
 
-$IPT -A SERVICES -m iprange --src-range 192.1.68.1-192.168.1.254 -p tcp --dport 631 -j ACCEPT
-$IPT -A SERVICES -m iprange --src-range 192.1.68.1-192.168.1.254 -p udp --dport 631 -j ACCEPT
-
-#use google to find default ports
-#allow responses from initiated connections
+#Permitir respuesta de conexiones establecidas
 $IPT -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-#NAT TABLE PREROUTING + FORWARD CHAIN
+$IPT -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8080
+$IPT -A FORWARD -p tcp --dport 8080 -j ACCEPT
 
+$IPT -t nat -A POSTROUTING -o ens6 -j MASQUERADE
 
