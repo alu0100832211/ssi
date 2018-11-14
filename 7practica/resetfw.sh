@@ -4,7 +4,7 @@
 # Servidor: nc -l -p <puerto> comenzar a escuchar en un puerto
 # Cliente: nc <IP> <puerto> escribir en el puerto de esa IP
 
-IPT = /sbin/iptables
+IPT=/sbin/iptables
 
 $IPT -F
 

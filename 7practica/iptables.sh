@@ -1,6 +1,6 @@
 #!/bin/sh
 
-IPT = /sbin/iptables
+IPT=/sbin/iptables
 
 #Blank state
 $IPT -F
@@ -10,9 +10,10 @@ $IPT -P OUTPUT ACCEPT
 $IPT -P INPUT DROP
 $IPT -P FORWARD DROP
 
+
 $IPT -t nat -P OUTPUT ACCEPT
 $IPT -t nat -P PREROUTING ACCEPT
-$IPT -t nat -p POSTROUTING
+$IPT -t nat -P POSTROUTING
 
 $IPT -N SERVICES
 
